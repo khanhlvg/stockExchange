@@ -26,7 +26,7 @@ public class GetSmallStockList {
 	static final int LAST_PAGE = 10;
 	
 	static final String PATH = "D:\\StockForecast\\InputData\\";
-	static final String OUTPUT_CSV = "SmallScaleStock.csv";
+	static final String OUTPUT_CSV = PATH + "SmallScaleStock.csv";
 	
 	static final Pattern STOCK_INFO_ROW = Pattern.compile("<tr class=\"rankingTabledata yjM\">.*?<\\/tr>");
 	static final Pattern STOCK_CONTENT = Pattern.compile(".*?>(\\d*)<\\/a>.*?yjSt\">(.*?)<\\/td>.*?yjSt\">(.*?)<\\/td>.*?bgyellow01\">(.*?)<\\/td>");
@@ -118,7 +118,7 @@ public class GetSmallStockList {
 		for (int p=1; p<= LAST_PAGE; p++) {
 			addStockInfoToList(YAHOO_FINANCE_URL + p, stockList);
 		}
-		exportStockList(stockList, PATH + OUTPUT_CSV);
+		exportStockList(stockList, OUTPUT_CSV);
 		
 	}
 }
