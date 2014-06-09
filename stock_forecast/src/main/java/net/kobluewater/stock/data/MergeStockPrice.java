@@ -3,11 +3,13 @@ package net.kobluewater.stock.data;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import net.kobluewater.stock.dto.StockDto;
 import net.kobluewater.stock.util.FileUtil;
 
 public class MergeStockPrice {
@@ -40,12 +42,14 @@ public class MergeStockPrice {
 		}
 	}
 
-	static final String RAW_CSV_PATH = "D:\\StockForecast\\InputData\\RAWStockHistory\\";
+	static final String RAW_CSV_PATH = "D:\\SelfProject\\ko_stockexchange\\Document\\StockForecast\\InputData\\RAWStockHistory\\";
 	
-	static final String OUTPUT_PATH = "D:\\StockForecast\\InputData\\MergedStockHistory\\";
+	static final String OUTPUT_PATH = "D:\\SelfProject\\ko_stockexchange\\Document\\StockForecast\\InputData\\MergedStockHistory\\";
 	static final String OUTPUT_CSV = OUTPUT_PATH + "LastPriceOfDay.csv";
 	
 	static final String COLUMN_NAME_FOR_DATE = "date";
+	
+	static LinkedHashSet<String> dateSet = new LinkedHashSet<String>();
 	
 	static Logger log = Logger.getLogger(MergeStockPrice.class.getName());
 	
@@ -53,6 +57,23 @@ public class MergeStockPrice {
 		return RAW_CSV_PATH + stockID + ".csv";
 	}
 	
+	static StockDto loadStockInfoToDto(String stockID) {
+		String filename = getFilenameFromStockID(stockID);
+		List<String> stockRAWDataList = FileUtil.readListFromFile(filename, 3);
+		
+		StockDto ret = new StockDto(stockID);
+		
+		for (String rawData : stockRAWDataList) {
+			StockDailyPrice dailyPrice = new StockDailyPrice(stockID, rawData);
+			ret.setStockPrice(dailyPrice.date, Integer.parseInt(dailyPrice.getValueToMerge()));
+			dateSet.add(dailyPrice.date);
+		}
+		
+		return ret;
+	}
+	
+	//old code 20140608 Merge Data using map with key = date
+	/*
 	static void loadStockInfoToMap(String stockID, LinkedHashMap<String,ArrayList<String>> map) {
 		String filename = getFilenameFromStockID(stockID);
 		List<String> stockRAWDataList = FileUtil.readListFromFile(filename, 3);
@@ -75,8 +96,10 @@ public class MergeStockPrice {
 				map.get(dailyPrice.date).add(dailyPrice.getValueToMerge());
 			}
 		}
-	}
+	}*/
 	
+	//old code 20140608 Merge Data using map with key = date
+	/*
 	static void exportToCsv(LinkedHashMap<String,ArrayList<String>> map, String filename) {
 		
 		List<String> ret = new ArrayList<String>();
@@ -93,11 +116,36 @@ public class MergeStockPrice {
 			ret.add(sb.toString());
 		}
 		FileUtil.writeListToFile(ret, OUTPUT_CSV);
+	}*/
+	
+static void exportToCsv(List<StockDto> stockList, String filename) {
+		
+		List<String> ret = new ArrayList<String>();
+		StringBuilder sb = null;
+	
+		sb = new StringBuilder();
+		sb.append("date");
+		for (StockDto stk : stockList) {
+			sb.append(",").append(stk.getCode());
+		}
+		ret.add(sb.toString());
+		
+		for (String date : dateSet) {
+			sb = new StringBuilder();
+			sb.append(date);
+			for (StockDto stk : stockList) {
+				sb.append(",").append(stk.getStockPrice(date));
+			}
+			ret.add(sb.toString());
+		}
+	
+		FileUtil.writeListToFile(ret, filename);
 	}
 	
 	public static void main(String[] args) {
 		
-		LinkedHashMap<String,ArrayList<String>> map = new LinkedHashMap<String,ArrayList<String>>();
+		//old code 20140608 Merge Data using map with key = date
+		/*LinkedHashMap<String,ArrayList<String>> map = new LinkedHashMap<String,ArrayList<String>>();
 		File[] files = new File(RAW_CSV_PATH).listFiles();
 		for (File file : files) {
 	        if (!file.isDirectory()) {
@@ -107,7 +155,19 @@ public class MergeStockPrice {
 	        }
 	    }
 		
-		exportToCsv(map,"");
+		exportToCsv(map,OUTPUT_CSV);*/
+		
+		List<StockDto> stockList = new ArrayList<StockDto>();
+		File[] files = new File(RAW_CSV_PATH).listFiles();
+		for (File file : files) {
+	        if (!file.isDirectory()) {
+	            String stockID = file.getName().replace(".csv", "");
+	            stockList.add(loadStockInfoToDto(stockID));
+	            log.info("Finished loading " + file.getAbsolutePath());
+	        }
+	    }
+		
+		exportToCsv(stockList,OUTPUT_CSV);
 
 	}
 
